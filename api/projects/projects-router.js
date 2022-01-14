@@ -1,45 +1,73 @@
-// Write your "projects" router here!
 const express = require("express");
 const Project = require("./projects-model");
+const {
+ validateProjectId,
+ validateNewProject,
+ validateUpdatedProject,
+} = require("./projects-middleware");
+const { handleError } = require("./../general-middleware");
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
  try {
-  const project = await Project.get();
-  res.status(200).json(project);
+  const projects = await Project.get();
+  res.status(200).json(projects);
  } catch (err) {
-  res.status(404).json({ err: err.message });
+  next(err);
  }
 });
-
-router.get("/:id", async (req, res) => {
- const { id } = req.params;
+router.get("/:id", validateProjectId, async (req, res, next) => {
  try {
-  const oneProject = await Project.get(id);
-  if (!oneProject) {
-   res.status(404).json({ message: "Project not found" });
-  } else {
-   res.status(200).json(oneProject);
+  const { id } = req.params;
+  const targetProject = await Project.get(id);
+  res.status(200).json(targetProject);
+ } catch (err) {
+  next(err);
+ }
+});
+router.post("/", validateNewProject, async (req, res, next) => {
+ try {
+  const { completed = false } = req.body;
+  const newProject = await Project.insert({ ...req.body, completed });
+  res.status(201).json(newProject);
+ } catch (err) {
+  next(err);
+ }
+});
+router.put(
+ "/:id",
+ validateProjectId,
+ validateUpdatedProject,
+ async (req, res, next) => {
+  try {
+   const { id } = req.params;
+   const updatedProject = await Project.update(id, req.body);
+   res.status(200).json(updatedProject);
+  } catch (err) {
+   next(err);
   }
- } catch (err) {
-  res.status(404).json({ err: err.message });
  }
-});
-
-router.post("/", async (req, res) => {
- const { name, description, completed } = req.body;
- const newProject = await Project.insert({ name, description, completed });
+);
+router.delete("/:id", validateProjectId, async (req, res, next) => {
  try {
-  if (!name || !description || !completed) {
-   res.status(400).json({ message: "project not found" });
-  } else {
-   res.status(201).json(newProject);
-  }
+  const { id } = req.params;
+  await Project.remove(id);
+  res.end();
  } catch (err) {
-  res.status(404).json({ err: err.message });
+  next(err);
+ }
+});
+router.get("/:id/actions", validateProjectId, async (req, res, next) => {
+ try {
+  const { id } = req.params;
+  const targetProject = await Project.get(id);
+  res.status(200).json(targetProject.actions);
+ } catch (err) {
+  next(err);
  }
 });
 
+router.use(handleError);
 
 module.exports = router;
