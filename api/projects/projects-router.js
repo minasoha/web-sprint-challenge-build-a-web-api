@@ -18,7 +18,7 @@ router.get("/:id", async (req, res) => {
  try {
   const oneProject = await Project.get(id);
   if (!oneProject) {
-   res.status(404).json({ err: console.error();.message });
+   res.status(404).json({ message: "Project not found" });
   } else {
    res.status(200).json(oneProject);
   }
@@ -26,5 +26,20 @@ router.get("/:id", async (req, res) => {
   res.status(404).json({ err: err.message });
  }
 });
+
+router.post("/", async (req, res) => {
+ const { name, description, completed } = req.body;
+ const newProject = await Project.insert({ name, description, completed });
+ try {
+  if (!name || !description || !completed) {
+   res.status(400).json({ message: "project not found" });
+  } else {
+   res.status(201).json(newProject);
+  }
+ } catch (err) {
+  res.status(404).json({ err: err.message });
+ }
+});
+
 
 module.exports = router;
